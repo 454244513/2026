@@ -16671,7 +16671,7 @@ function Explorer:OpenSettings()
             end
         end)
         Services.UserInputService.InputChanged:Connect(function(Input)
-            if Dragging and Input.UserInputType == Enum.UserInputType.MouseMovement then
+            if Dragging and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
                 Update(Input.Position.X)
             end
         end)
