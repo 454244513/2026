@@ -7620,6 +7620,18 @@ function Explorer:_FlatAllocateRow(Container)
         self:OpenContextMenu(Mouse.X, Mouse.Y)
         self:_FlatRefreshVisibleSelection()
     end)
+    Row.TouchLongPress:Connect(function()
+        local Item = PoolEntry.Item
+        if not Item then return end
+
+        if not self.SelectedSet[Item] then
+            self:SetSelection({Item})
+            self.SelectionAnchor = Item
+        end
+        local Mouse = self.LocalPlayer:GetMouse()
+        self:OpenContextMenu(Mouse.X, Mouse.Y)
+        self:_FlatRefreshVisibleSelection()
+    end)
 
     return PoolEntry
 end
@@ -8261,7 +8273,7 @@ function Explorer:_VTreeAllocateRow(Container)
     end)
 
     Row.InputBegan:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
             local RowData = PoolEntry.Bound
             if not RowData or not RowData.Instance or RowData.IsNilContainer then return end
             self.DragOperation = {
@@ -8280,6 +8292,18 @@ function Explorer:_VTreeAllocateRow(Container)
     end)
 
     Row.MouseButton2Click:Connect(function()
+        local RowData = PoolEntry.Bound
+        if not RowData or not RowData.Instance then return end
+
+        if not self.SelectedSet[RowData.Instance] then
+            self:SetSelection({RowData.Instance})
+            self.SelectionAnchor = RowData.Instance
+        end
+        local Mouse = self.LocalPlayer:GetMouse()
+        self:OpenContextMenu(Mouse.X, Mouse.Y)
+        self:_VTreeRefreshVisibleSelection()
+    end)
+    Row.TouchLongPress:Connect(function()
         local RowData = PoolEntry.Bound
         if not RowData or not RowData.Instance then return end
 
@@ -11813,7 +11837,7 @@ function Explorer:CreateModalWindow(Title, Width, Height, Options)
     local DragStart, StartPos
     local Dragging = false
     TitleBar.InputBegan:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
             Dragging = true
             DragStart = Input.Position
             StartPos = Window.Position
@@ -11837,7 +11861,7 @@ function Explorer:CreateModalWindow(Title, Width, Height, Options)
     end))
 
     Track(Services.UserInputService.InputEnded:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
             Dragging = false
         end
     end))
@@ -16641,18 +16665,18 @@ function Explorer:OpenSettings()
         end
 
         HitArea.InputBegan:Connect(function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                 Dragging = true
                 Update(Input.Position.X)
             end
         end)
         Services.UserInputService.InputChanged:Connect(function(Input)
-            if Dragging and Input.UserInputType == Enum.UserInputType.MouseMovement then
+            if Dragging and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
                 Update(Input.Position.X)
             end
         end)
         Services.UserInputService.InputEnded:Connect(function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                 Dragging = false
             end
         end)
@@ -18711,7 +18735,7 @@ function Explorer:_StartClickPartToSelect()
     self:_StopClickPartToSelect()
 
     self._ClickPartConnection = Track(Services.UserInputService.InputBegan:Connect(function(Input, GameProcessed)
-        if Input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+        if Input.UserInputType ~= Enum.UserInputType.MouseButton1 or Input.UserInputType ~= Enum.UserInputType.Touch then
             return
         end
 
@@ -18895,6 +18919,21 @@ function Explorer:_RebuildPinBar()
         end)
 
         Pill.MouseButton2Click:Connect(function()
+            local Target = self:_ResolvePinPath(Path)
+            self:UnpinInstance(Target or {GetFullName = function() return Path end})
+
+            if not Target then
+                for J, P in self.PinnedPaths do
+                    if P == Path then
+                        table.remove(self.PinnedPaths, J)
+                        if self.SaveConfig then self:SaveConfig() end
+                        self:_RebuildPinBar()
+                        break
+                    end
+                end
+            end
+        end)
+        Pill.TouchLongPress:Connect(function()
             local Target = self:_ResolvePinPath(Path)
             self:UnpinInstance(Target or {GetFullName = function() return Path end})
 
